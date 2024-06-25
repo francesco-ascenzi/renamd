@@ -1,0 +1,29 @@
+{
+  "name": "renamd",
+  "version": "2.0.1",
+  "author": "Frash | Francesco Ascenzi",
+  "funding": "https://www.paypal.com/donate/?hosted_button_id=QL4PRUX9K9Y6A",
+  "homepage": "https://github.com/francesco-ascenzi/renamd",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/francesco-ascenzi/renamd.git"
+  },
+  "bugs": {
+    "url": "https://github.com/francesco-ascenzi/renamd/issues"
+  },
+  "main": "./index.js",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "tsc -p .",
+    "start": "node index.js"
+  },
+  "type": "module",
+  "dependencies": {
+    "exiftool-vendored": "^27.0.0",
+    "node": "^22.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}
