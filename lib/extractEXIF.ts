@@ -5,8 +5,12 @@ import exif from 'exif-reader';
  * 
  * @param {string} filePath - File path
  * @returns {Promise<any | Error>}
+ * 
+ * @author Frash | Francesco Ascenzi
+ * @fund https://www.paypal.com/donate/?hosted_button_id=QL4PRUX9K9Y6A
+ * @license Apache 2.0
  */
-export default async function extractEXIF(filePath: string): Promise<any | Error> {
+export default async function extractEXIF(filePath: string): Promise<any> {
 
   // Initialize buffer chunk hold
   let bufferChunk: Buffer = Buffer.alloc(0);
@@ -107,10 +111,10 @@ export default async function extractEXIF(filePath: string): Promise<any | Error
       }
     }
   } catch (err: unknown) {
-    return new Error(String(err));
+    throw new Error(String(err));
   }
 
-  // Slice buffer chunk until "Exif"
+  // Slice buffer chunk to the "Exif"
   bufferChunk = bufferChunk.slice(bufferChunk.toString('ascii').indexOf('Exif'));
 
   // Format Exif

@@ -1,4 +1,7 @@
+# Files
+index.js
+
 # Folders
-fns/*.js
-fns/core/*.js
+lib/*.js
+lib/core/*.js
 node_modules

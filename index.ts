@@ -2,10 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import { isKeyInObject, isObject } from 'vdck';
 
-import welcomeMessage from './fns/core/welcomeMessage.js';
-import prompt from './fns/core/readUserInput.js';
-import extractEXIF from './fns/extractEXIF.js';
-import formatDate from './fns/formatDate.js';
+import welcomeMessage from './lib/core/welcomeMessage.js';
+import prompt from './lib/core/readUserInput.js';
+import extractEXIF from './lib/extractEXIF.js';
+import formatDate from './lib/formatDate.js';
 
 // Constants and variables
 const errorLine = '\x1b[31m> Error:\x1b[0m';
@@ -15,18 +15,18 @@ const errorLine = '\x1b[31m> Error:\x1b[0m';
 
   await welcomeMessage();
 
+  // Wait user's input folder path
   let dirPath: string | Error = prompt('Paste your dir path:\n> ', 8000);
   if (dirPath instanceof Error) {
     console.error(errorLine, dirPath);
     return 1;
   }
+  dirPath = path.join(dirPath.trim().replace(/"+/gmi, ''));
 
-  dirPath = path.join(dirPath.trim().replace(/"+/gmi, '')); // Convert based on os path format rules set
-
+  // Retrieve folders and files into the user's input folder path
   let filesList: string[] = [];
   try {
     filesList = await fs.promises.readdir(dirPath);
-
     if (filesList.length == 0) throw new Error('No file was found');
   } catch (err: unknown) {
     console.error(errorLine, err);
