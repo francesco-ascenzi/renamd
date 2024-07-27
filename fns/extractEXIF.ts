@@ -1,130 +1,125 @@
-// Ex: "C:\\Users\\Admin\\Pictures\\Wallpapers"
 import fs from 'fs';
-
-interface exifData {
-  ok: boolean
-}
-
-function formatEXIF(exifChunk: Buffer): exifData | Error {
-
-  console.log(exifChunk.toString('utf8'))
-
-  return {
-    ok: true
-  };
-}
+import exif from 'exif-reader';
 
 /** Extract EXIF from .jpg file
  * 
  * @param {string} filePath - File path
- * @returns {Promise<any>}
+ * @returns {Promise<any | Error>}
  */
-export default async function extractEXIF(filePath: string): Promise<exifData | Error> {
+export default async function extractEXIF(filePath: string): Promise<any | Error> {
+
+  // Initialize buffer chunk hold
+  let bufferChunk: Buffer = Buffer.alloc(0);
+
   try {
+    // Initialize read stream
     const readStream: fs.ReadStream = fs.createReadStream(filePath);
 
-    // Hold variables
-    let bufferChunk: Buffer = Buffer.alloc(0);
     let remainingDataLength = 0;
+    let searchNextChunk: number = -1; // searchNextChunk == 0: full, 1: without 0xE1, 2: without EXIF length marker
 
-    // If 0xFF is in one chunk and the 0xE1 is in another one | halfIndex == 0: full, 1: without 0xE1, 2: without EXIF length marker
-    let halfIndex: number = 0;
-
-    // For await readStream and process data
+    // For await the read stream and process data
     for await (const chunk of readStream) {
-      const chunkLength: number = chunk.length - 1;
+      const chunkLength: number = chunk.length;
       let startIndex = chunk.indexOf(0xFF);
 
       // If the chunk is not a complete EXIF segment
-      if (remainingDataLength > 0) {
+      if (searchNextChunk != -1) {
+        if (searchNextChunk == 0) {
+          if (chunk[0] == 0xE1) {
 
+            // Check EXIF length
+            let lengthMarker: number = chunk.readUInt16BE(1);
 
-        if (halfIndex == 0) {
-
-          // Add the remaining buffer data to the buffer
-          if (remainingDataLength > chunkLength) {
-            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, chunkLength)]);
-            remainingDataLength = remainingDataLength - chunkLength;
+            // Retrieve remaining data from the next chunk
+            if ((lengthMarker + 2) > chunkLength) {
+              bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, chunkLength)]);
+              remainingDataLength = (lengthMarker + 2) - chunkLength;
+              searchNextChunk = 2;
+              continue;
+            // Add to the bufferChunk and keep going
+            } else {
+              bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, lengthMarker)]);
+            }
           } else {
-            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, remainingDataLength)]);
-            remainingDataLength = 0;
+            bufferChunk = Buffer.concat([]);
           }
-
-        } else if (halfIndex == 1 && chunk[0] == 0xE1) {
-
-          startIndex = 0
-
-        } else if (halfIndex == 2) {
-
-          startIndex = 0
-
+        } else if (searchNextChunk == 1) {
           // Check EXIF length
           let lengthMarker: number = chunk.readUInt16BE(0);
 
-          if ((2 + lengthMarker) > chunkLength) {
+          // Retrieve remaining data from the next chunk
+          if ((lengthMarker + 1) > chunkLength) {
             bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, chunkLength)]);
-            remainingDataLength = (0 + lengthMarker) - chunkLength;
+            remainingDataLength = (lengthMarker + 1) - chunkLength;
+            searchNextChunk = 2;
+            continue;
+          // Add to the bufferChunk and keep going
           } else {
-            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, lengthMarker)]);
+            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, lengthMarker)]);
           }
-
-        } 
+        } else if (searchNextChunk == 2) {
+          // Retrieve remaining data from the next chunk
+          if (remainingDataLength > chunkLength) {
+            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, chunkLength)]);
+            remainingDataLength = remainingDataLength - chunkLength;
+            searchNextChunk = 2;
+            continue;
+          // Add to the bufferChunk and keep going
+          } else {
+            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(0, remainingDataLength)]);
+          }
+        }
+      }
 
       // Search for the EXIF segment
-      } else {
+      while (startIndex != -1) {
 
-        while (startIndex != -1) {
+        // Search in the next chunk
+        if (chunk[startIndex + 1] > chunkLength) {
+          bufferChunk = Buffer.concat([bufferChunk, chunk[startIndex]]);
+          searchNextChunk = 0;
+          break;
+        // APP1 segment | 0xFFE1
+        } else if (chunk[startIndex + 1] == 0xE1) {
+          if (chunk[startIndex + 2] > chunkLength) {
+            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, chunkLength)]);
+            searchNextChunk = 1;
+          } else {
+            // Check EXIF length
+            let lengthMarker: number = chunk.readUInt16BE(startIndex + 2);
 
-          // APP1 segment | 0xFFE1
-          if (chunk[startIndex + 1] == 0xE1) {
-
-            // If marker length is in the next chunk
-            if ((startIndex + 2) > chunkLength) {
-              bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, startIndex + 1)]);
-              remainingDataLength = 2;
-
-              halfIndex = 2;
+            // Retrieve remaining data from the next chunk
+            if ((startIndex + 2 + lengthMarker) > chunkLength) {
+              bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, chunkLength)]);
+              remainingDataLength = (startIndex + 2 + lengthMarker) - chunkLength;
+              searchNextChunk = 2;
               break;
-
+            // Add to the bufferChunk and keep going
             } else {
-
-              // Check EXIF length
-              let lengthMarker: number = chunk.readUInt16BE(startIndex + 2);
-
-              if ((startIndex + 2 + lengthMarker) > chunkLength) {
-                bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, chunkLength)]);
-                remainingDataLength = (startIndex + 2 + lengthMarker) - chunkLength;
-
-                break;
-              } else {
-                bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, (startIndex + lengthMarker))]);
-              }
-
+              bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex, (startIndex + lengthMarker))]);
             }
-
-          // APP1 was cutted and it resides in the next chunk
-          } else if ((startIndex + 1) > chunkLength) {
-            bufferChunk = Buffer.concat([bufferChunk, chunk.slice(startIndex)]);
-            remainingDataLength = 1;
-
-            halfIndex = 1;
-            break;
-
           }
-          
-          startIndex = chunk.indexOf(0xFF, startIndex + 1);
-
         }
 
+        // Keep searching
+        startIndex = chunk.indexOf(0xFF, (startIndex + 1));
       }
     }
-
-    // Try to format EXIF data
-    const formattedEXIF = formatEXIF(bufferChunk);
-    if (formattedEXIF instanceof Error) throw new Error(String(formattedEXIF));
-
-    return formattedEXIF;
   } catch (err: unknown) {
     return new Error(String(err));
   }
+
+  // Slice buffer chunk until "Exif"
+  bufferChunk = bufferChunk.slice(bufferChunk.toString('ascii').indexOf('Exif'));
+
+  // Format Exif
+  const exifData: any = (exif as any)(bufferChunk);
+
+  if (exifData instanceof Error) {
+    throw new Error(String(exifData));
+  }
+
+  // Return
+  return exifData;
 }
