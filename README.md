@@ -11,18 +11,24 @@ Renamd is a small utility tool that rename your .jpg files based on the earliest
 ## Requirements
 To use this tool, you must have:
 - **Node.js** version 18.0.0 or higher.
+- **Typescript** version 5.4.5 or higher.
 - A **CLI** to execute node index.js.
 
 ## How to use it
-Start the tool with:  
+Open your CLI and navigate to the folder of this tool.  
+- Build files with:  
+
+```npm run build```
+
+- Start the tool with:  
 
 ```node index.js```
 
-Paste your file's path with ```"``` quotation marks as down below:
+- Paste your file's path with ```"``` quotation marks as down below:
 
 ```"C:\Users\Administrator\Desktop\test"```
 
-Then press "Enter" and it will do all the dirty work for you.
+- Press "Enter" and it will do all the dirty work for you.
 
 ## Funding
 If you liked this tool, consider funding it at [@PayPal](https://www.paypal.com/donate/?hosted_button_id=QL4PRUX9K9Y6A) (the link is within package.json too)
