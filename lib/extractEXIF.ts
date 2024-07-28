@@ -81,7 +81,7 @@ export default async function extractEXIF(filePath: string): Promise<any> {
 
         // Search in the next chunk
         if (chunk[startIndex + 1] > chunkLength) {
-          bufferChunk = Buffer.concat([bufferChunk, chunk[startIndex]]);
+          bufferChunk = Buffer.concat([bufferChunk, Buffer.from([chunk[startIndex]])]);
           searchNextChunk = 0;
           break;
         // APP1 segment | 0xFFE1
@@ -111,6 +111,7 @@ export default async function extractEXIF(filePath: string): Promise<any> {
       }
     }
   } catch (err: unknown) {
+    console.error(err);
     throw new Error(String(err));
   }
 
