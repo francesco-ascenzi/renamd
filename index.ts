@@ -7,9 +7,6 @@ import prompt from './lib/core/readUserInput.js';
 import extractEXIF from './lib/extractEXIF.js';
 import formatDate from './lib/formatDate.js';
 
-// Constants and variables
-const errorLine = '\x1b[31m> Error:\x1b[0m';
-
 // Main process
 (async () => {
 
