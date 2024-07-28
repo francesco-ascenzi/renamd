@@ -1,7 +1,8 @@
 # Files
-index.js
+index.ts
+tsconfig.json
 
 # Folders
-lib/*.js
-lib/core/*.js
+lib/*.ts
+lib/core/*.ts
 node_modules
