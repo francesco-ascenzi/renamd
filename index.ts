@@ -18,23 +18,55 @@ const errorLine = '\x1b[31m> Error:\x1b[0m';
   // Wait user's input folder path
   let dirPath: string | Error = prompt('Paste your dir path:\n> ', 8000);
   if (dirPath instanceof Error) {
-    console.error(errorLine, dirPath);
+    console.error(`[${new Date().toISOString()}] Error: ${dirPath}`);
     return 1;
   }
   dirPath = path.join(dirPath.trim().replace(/"+/gmi, ''));
 
-  // Retrieve folders and files into the user's input folder path
+  // Retrieve folders and files from the user's input folder path
   let filesList: string[] = [];
   try {
     filesList = await fs.promises.readdir(dirPath);
     if (filesList.length == 0) throw new Error('No file was found');
   } catch (err: unknown) {
-    console.error(errorLine, err);
+    console.error(`[${new Date().toISOString()}] Error:`, err);
     return 1;
   }
 
+  // Initialize map object and start to map folders/files within
   const mapObj: { [key: string]: any } = {};
   const filesListLength: number = filesList.length;
+  for (let i = 0; i < filesListLength; i++) {
+    const fullPath = path.join(dirPath, filesList[i]);
+
+    try {
+      // Element stats
+      const elementStats = await fs.promises.stat(fullPath);
+      if (await elementStats.isDirectory() && !(filesList[i] in mapObj)) {
+        Object.assign(mapObj, { [filesList[i]]: {} });
+
+        // Read subdir
+        const folderFiles: string[] = await fs.promises.readdir(fullPath);
+        for (let j = 0; j < folderFiles.length; j++) {
+          const folderFile = path.join(fullPath, folderFiles[j]);
+
+          if (!(await (await fs.promises.stat(folderFile)).isDirectory())) {
+            const subFile = folderFiles[j].split('.')[0];
+            if (!(subFile in mapObj[filesList[i]])) {
+              Object.assign(mapObj[filesList[i]], { [subFile]: 0 });
+            } else if (subFile in mapObj[filesList[i]]) {
+              mapObj[filesList[i]][subFile] += 1;
+            }      
+          }
+        }
+      }
+    } catch (err: unknown) {
+      console.error(`[${new Date().toISOString()}] Error: ${err}`);
+      return 1;
+    }
+  }
+
+  // Analyze files and rename them
   for (let i = 0; i < filesListLength; i++) {
     const filePath: string = path.join(dirPath, filesList[i]);
 
@@ -44,8 +76,6 @@ const errorLine = '\x1b[31m> Error:\x1b[0m';
         const fileExif = await extractEXIF(filePath);
 
         let fileName: string | null = null;
-
-        // "C:\Users\Admin\Desktop\test"
 
         // Exif
         if (isObject(fileExif, 1) && isKeyInObject(fileExif, 'Photo', 'o', { minLength: 1 })) {
@@ -82,7 +112,7 @@ const errorLine = '\x1b[31m> Error:\x1b[0m';
         }
       }
     } catch (err: unknown) {
-      console.error(errorLine, err);
+      console.error(`[${new Date().toISOString()}] Error: ${err}`);
       return 1;
     }
   }
