@@ -1,6 +1,11 @@
 # RENAMD
 Renamd is a small utility tool that rename your .jpg files based on the earliest available creation date found in either EXIF or fs.stat metadata.
 
+## Version 0.2.0
+Fix & features:
+- If Exif was not found, it keeps going.
+- Use modified date if it's lesser than creation date.
+
 ### Summary
 - [Requirements](#requirements)
 - [How to use it](#howtouseit)
