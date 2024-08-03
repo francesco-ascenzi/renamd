@@ -115,12 +115,16 @@ export default async function extractEXIF(filePath: string): Promise<any> {
     throw new Error(String(err));
   }
 
+  // Check if the "Exif"'s data exists
+  if (bufferChunk.length <= 0 || bufferChunk.toString('ascii').indexOf('Exif') < 0) {
+    return false;
+  }
+
   // Slice buffer chunk to the "Exif"
   bufferChunk = bufferChunk.slice(bufferChunk.toString('ascii').indexOf('Exif'));
 
   // Format Exif
   const exifData: any = (exif as any)(bufferChunk);
-
   if (exifData instanceof Error) {
     throw new Error(String(exifData));
   }
