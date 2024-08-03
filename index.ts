@@ -73,19 +73,33 @@ import formatDate from './lib/formatDate.js';
         const fileExif = await extractEXIF(filePath);
 
         let fileName: string | null = null;
+        let fileDate: Date | null = null;
 
         // Exif
         if (isObject(fileExif, 1) && isKeyInObject(fileExif, 'Photo', 'o', { minLength: 1 })) {
           if (isKeyInObject(fileExif.Photo, 'DateTimeOriginal', 'd')) {
             fileName = formatDate(fileExif.Photo.DateTimeOriginal);
+            fileDate = fileExif.Photo.DateTimeOriginal;
           } else if (isKeyInObject(fileExif.Photo, 'DateTimeDigitized', 'd')) {
             fileName = formatDate(fileExif.Photo.DateTimeDigitized);
+            fileDate = fileExif.Photo.DateTimeDigitized;
           }
         }
 
         // MetaData
         if (!fileName && isKeyInObject(fileMetadata, 'ctimeMs', 'nf')) {
           fileName = formatDate(new Date(fileMetadata.ctimeMs));
+          fileDate = new Date(fileMetadata.ctimeMs);
+        }
+
+        if (isKeyInObject(fileMetadata, 'mtimeMs', 'nf')) {
+          if (!fileName) {
+            fileName = formatDate(new Date(fileMetadata.mtimeMs));
+          } else {
+            if (fileDate && fileDate.getTime() > new Date(fileMetadata.mtimeMs).getTime()) {
+              fileName = formatDate(new Date(fileMetadata.mtimeMs));
+            }
+          }
         }
 
         if (fileName) {
