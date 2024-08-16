@@ -92,7 +92,7 @@ import formatDate from './lib/formatDate.js';
           fileDate = new Date(fileMetadata.ctimeMs);
         }
 
-        if (isKeyInObject(fileMetadata, 'mtimeMs', 'nf')) {
+        if (isKeyInObject(fileMetadata, 'mtimeMs', 'n')) {
           if (!fileName) {
             fileName = formatDate(new Date(fileMetadata.mtimeMs));
           } else {
